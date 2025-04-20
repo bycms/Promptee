@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@azure-rest/ai-inference": "latest",
+    "@azure/core-auth": "latest",
+    "@azure/core-sse": "latest",
+    "browserify": "^17.0.1",
+    "openai": "^4.95.1"
+  }
+}

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Promptee</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <h1>Promptee</h1>
+      <div class="model-selector-container">
+        <label for="model-selector">模型：</label>
+        <select id="model-selector" name="model" title="选择的模型将用于优化系统提示并生成响应。">
+          <option value="gpt-4o-mini">GPT-4o mini</option>
+          <option value="gpt-4o">GPT-4o</option>
+          <option value="gpt-4.1-mini">GPT-4.1 mini</option>
+          <option value="gpt-4.1-nano">GPT-4.1 nano</option>
+          <option value="Phi-4">Phi-4</option>
+          <option value="Phi-3-medium-4k-instruct">Phi-3 Medium 4K Instruct</option>
+          <option value="Meta-Llama-3.1-8B-Instruct">Llama 3.1 8B Instruct</option>
+          <option value="mistral-small-2503">Mistral Small 3.1</option>
+          <option value="deepseek-r1">Deepseek R1</option>
+        </select>
+      </div>
+    </header>
+
+    <div class="system-prompt-container">
+      <div class="prompt-header">
+        <label for="system-prompt">系统提示</label>
+        <div class="prompt-actions">
+          <button class="btn random-btn" id="random-prompt">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#ffffff"><path d="M12 2l3 7h7l-5.5 4.5 2 7-6-4-6 4 2-7L2 9h7z"></path></svg>
+            给我一些灵感...
+          </button>
+          <button class="btn optimize-btn" id="optimize-prompt">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            优化提示词
+          </button>
+          <button class="btn save-btn" id="save-system">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f9f9f9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8"></path></svg>
+            保存
+          </button>
+        </div>
+      </div>
+      <textarea id="system-prompt" placeholder="描述 AI 的角色（例如：'你是一个乐于助人的助手'）"></textarea>
+    </div>
+
+    <div class="chat-container">
+      <div id="chat-display">
+        <div class="welcome-message">
+          <h3>欢迎使用 Promptee</h3>
+          <p>这样使用：</p>
+          <ol>
+            <li>设置系统提示</li>
+            <li>选择一个 AI 模型</li>
+            <li>在下方输入您的消息</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-container">
+      <div class="input-group">
+        <input type="text" id="user-input" placeholder="输入您的消息..." autocomplete="off">
+        <button id="send-button" class="send-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 2L11 13"></path>
+            <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+            </svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="loading-overlay" class="loading-hidden">
+      <div class="loading-spinner"></div>
+      <p id="loading-text">处理中...</p>
+    </div>
+  </div>
+
+  <script src="bundle.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
