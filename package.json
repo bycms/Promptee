@@ -5,6 +5,9 @@
     "@azure/core-auth": "latest",
     "@azure/core-sse": "latest",
     "browserify": "^17.0.1",
+    "katex": "^0.16.22",
+    "markdown-it": "^14.1.0",
+    "markdown-it-texmath": "^1.0.0",
     "openai": "^4.95.1"
   }
 }

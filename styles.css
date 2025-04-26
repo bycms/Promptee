@@ -150,6 +150,7 @@ body {
 }
 
 #system-prompt {
+  /* Your existing styles */
   width: 100%;
   min-height: 100px;
   padding: 12px;
@@ -160,6 +161,36 @@ body {
   font-family: inherit;
   font-size: 0.95rem;
   resize: vertical;
+  transition: 0.3s;
+  overflow-y: auto;
+
+  /* Windows 11 Style Scrollbar (Chromium) */
+  &::-webkit-scrollbar {
+    width: 6px; /* Thin by default (like Win11) */
+    height: 6px;
+    cursor: pointer;
+    transition: all 0.5s ease;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 2px 0; /* Small top/bottom gap */
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--border-color) 70%, transparent);
+    border-radius: 3px;
+    transition: all 0.3s ease;
+  }
+
+  &:hover::-webkit-scrollbar {
+    width: 8px; /* Slightly wider on hover */
+  }
+
+  &:hover::-webkit-scrollbar-thumb {
+    background: var(--border-color); /* Full color on hover */
+    border-radius: 4px;
+  }
 }
 
 #system-prompt:focus {
@@ -184,6 +215,28 @@ body {
   padding: 16px;
   overflow-y: auto;
   scroll-behavior: smooth;
+}
+
+.chat-actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+#save-chat, #clear-chat {
+  background-color: var(--card-bg);
+  color: #58a6ff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#save-chat:hover, #clear-chat:hover {
+  background-color: rgba(88, 166, 255, 0.1);
+  border-color: #58a6ff;
 }
 
 .welcome-message {
@@ -259,6 +312,8 @@ body {
   color: var(--text-color);
   font-family: inherit;
   font-size: 0.95rem;
+  transition: all 0.2s;
+  overflow-y: auto;
 }
 
 #user-input:focus {

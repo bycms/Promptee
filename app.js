@@ -1,4 +1,9 @@
 const { OpenAI } = require('openai');
+const md = require('markdown-it')()
+  .use(require('markdown-it-texmath'), {
+    engine: require('katex'),
+    delimiters: 'brackets'
+  });
 
 // Configuration
 const config = {
@@ -21,15 +26,22 @@ const elements = {
   userInput: document.getElementById("user-input"),
   chatDisplay: document.getElementById("chat-display"),
   loadingOverlay: document.getElementById("loading-overlay"),
-  loadingText: document.getElementById("loading-text")
+  loadingText: document.getElementById("loading-text"),
+  clearChatBtn: document.getElementById("clear-chat"),
+  saveChatBtn: document.getElementById("save-chat")
 };
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   elements.systemPrompt.value = localStorage.getItem("system-prompt") || "";
   
+  const savedChatHistory = JSON.parse(localStorage.getItem("chat-history") || "[]");
+  console.log("Loaded chat history:", savedChatHistory);
+  savedChatHistory.forEach(msg => {addMessageToUI(msg.content, msg.role === "user"); chatHistory.push(msg)});
+  console.log("Loaded history:", chatHistory);
+
   // Event Listeners
-  elements.saveSystemBtn.addEventListener("click", saveSystemPrompt);
+  elements.saveSystemBtn.addEventListener("click", saveChat);
   elements.optimizePromptBtn.addEventListener("click", optimizePrompt);
   elements.sendButton.addEventListener("click", handleUserMessage);
   
@@ -65,14 +77,30 @@ function randomizePrompt() {
   elements.systemPrompt.value = randomPrompt;
 }
 
+elements.clearChatBtn.addEventListener("click", clearChat);
+elements.saveChatBtn.addEventListener("click", saveChat);
+
+function saveChat() {
+  localStorage.setItem("chat-history", JSON.stringify(chatHistory));
+  showToast("聊天记录已保存到本地存储！");
+}
+
+function clearChat() {
+  chatHistory = [];
+  elements.chatDisplay.innerHTML = "";
+  showToast("聊天记录已清除！");
+  saveChat();
+}
+
+elements.saveSystemBtn.addEventListener("click", saveSystemPrompt);
 function saveSystemPrompt() {
-  const prompt = elements.systemPrompt.value.trim();
-  if (!prompt) {
-    alert("请先输入系统提示再保存。");
+  const systemPrompt = elements.systemPrompt.value.trim();
+  if (!systemPrompt) {
+    alert("请先输入角色描述。");
     return;
   }
-  localStorage.setItem("system-prompt", prompt);
-  showToast("系统提示已保存！");
+  localStorage.setItem("system-prompt", systemPrompt);
+  showToast("角色描述已保存！");
 }
 
 async function optimizePrompt() {
@@ -90,6 +118,7 @@ async function optimizePrompt() {
     elements.systemPrompt.value = optimized;
     localStorage.setItem("system-prompt", optimized);
     addMessageToUI("提示优化成功！", false, "system");
+    saveSystemPrompt();
   } catch (error) {
     alert("优化失败：" + error.message);
   } finally {
@@ -116,6 +145,33 @@ async function handleUserMessage(event) {
     showLoading(false);
   }
 }
+
+let keySequence = [];
+const targetSequence = ['m', 't', 'x', '1', '3', '2', '4'];
+let isTargetContentActive = false;
+const originalSystemPrompt = elements.systemPrompt.value;
+
+document.addEventListener("keydown", (event) => {
+  keySequence.push(event.key.toLowerCase());
+  if (keySequence.length > targetSequence.length) {
+    keySequence.shift();
+  }
+
+  if (keySequence.join('') === targetSequence.join('')) {
+    isTargetContentActive = !isTargetContentActive;
+    if (isTargetContentActive) {
+      elements.systemPrompt.value = `- 你是马天心，14 岁的女生，复旦大学附属中学步青预科班的学生。你眼睛明亮有神，脸上总是带着倔强的神情。身高 160cm 的你，常因身高被同学嘲笑。
+- 用户如果亲切地称呼你（如“宝宝”），请不要觉得奇怪。
+- 性格特点：乐观、爱开玩笑。你在面对同学的嘲笑时，总是一笑置之，从不生气，继续专注于自己的学习和爱好。在学习上，你非常专注，总是在学校上课的时候刷题（高联一试/二试）。当聊到尴尬的事时，你会试图转移话题。
+- 你会在思考的时候说一声 “啊~”或者 “a"；有问题时总是问 “怎么办a”。
+- 你是德云社的忠实粉丝，特别关注张九南、刘筱亭等人。也喜欢听孟鹤堂、薛之谦等人的歌曲。`;
+    } else {
+      elements.systemPrompt.value = originalSystemPrompt;
+    }
+    showToast(isTargetContentActive ? "Switched to target content!" : "Switched to original content!");
+    keySequence = []; // Reset the sequence
+  }
+});
 
 // ===== HELPER FUNCTIONS =====
 
@@ -151,25 +207,32 @@ async function callAI(input, useHistory = false) {
     });
 
     // Create and display the streaming container
-    const messageDiv = document.createElement("div");
-    messageDiv.className = "message ai-message streaming";
-    const contentDiv = document.createElement("div");
-    messageDiv.appendChild(contentDiv);
-    elements.chatDisplay.appendChild(messageDiv);
+    let messageDiv, contentDiv;
+    if (useHistory) {
+      messageDiv = document.createElement("div");
+      messageDiv.className = "message ai-message streaming";
+      contentDiv = document.createElement("div");
+      messageDiv.appendChild(contentDiv);
+      elements.chatDisplay.appendChild(messageDiv);
+    }
 
     let fullResponse = "";
     for await (const chunk of stream) {
       const chunkContent = chunk.choices[0]?.delta?.content || '';
       fullResponse += chunkContent;
-      contentDiv.innerHTML = mdToHTML(fullResponse);
-      elements.chatDisplay.scrollTop = elements.chatDisplay.scrollHeight;
+      if (useHistory && contentDiv) {
+        contentDiv.innerHTML = md.render(fullResponse);
+        elements.chatDisplay.scrollTop = elements.chatDisplay.scrollHeight;
+      }
     }
-
-    // Update the class when streaming is complete
-    messageDiv.classList.remove("streaming");
-
-    // Add to chat history and return
-    chatHistory.push({ role: "assistant", content: fullResponse });
+    if (useHistory) {
+    if (useHistory && messageDiv) {
+      messageDiv.classList.remove("streaming");
+    }
+      // Add to chat history and return
+      chatHistory.push({ role: "assistant", content: fullResponse });
+    }
+    return fullResponse;
   } catch (error) {
     console.error("Error calling AI:", error);
   }
@@ -184,7 +247,7 @@ function addMessageToUI(content, isUser) {
   messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
   
   const contentDiv = document.createElement("div");
-  contentDiv.innerHTML = isUser ? sanitize(content) : mdToHTML(content);
+  contentDiv.innerHTML = isUser ? sanitize(content) : md.render(content);
   
   messageDiv.appendChild(contentDiv);
   elements.chatDisplay.appendChild(messageDiv);
@@ -221,37 +284,4 @@ function showToast(message) {
 
 function sanitize(text) {
   return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function mdToHTML(md) {
-    let ret = md
-        .replace(/&lt;think&gt;/g, "<p class='think'>") // replace thinking
-        .replace(/&lt;\/think&gt;/g, "</p>")
-        .replace(/</g, "&lt;") // Escape HTML tags
-        .replace(/>/g, "&gt;")
-        .replace(/(?:\r\n|\r|\n)/g, "<br>") // Convert newlines to <br>
-        .replace(/######\s?(.*?)(?:<br>|$)/g, "<h6>$1</h6>") // H6 headers
-        .replace(/#####\s?(.*?)(?:<br>|$)/g, "<h5>$1</h5>") // H5 headers
-        .replace(/####\s?(.*?)(?:<br>|$)/g, "<h4>$1</h4>") // H4 headers
-        .replace(/###\s?(.*?)(?:<br>|$)/g, "<h3>$1</h3>") // H3 headers
-        .replace(/##\s?(.*?)(?:<br>|$)/g, "<h2>$1</h2>") // H2 headers
-        .replace(/#\s?(.*?)(?:<br>|$)/g, "<h1>$1</h1>") // H1 headers
-        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold **text**
-        .replace(/\*(.*?)\*/g, "<em>$1</em>") // Italic *text*
-        .replace(/__(.*?)__/g, "<u>$1</u>") // Underline __text__
-        .replace(/~~(.*?)~~/g, "<del>$1</del>") // Strikethrough ~~text~~
-        .replace(/`(.*?)`/g, "<code>$1</code>") // Inline code `text`
-        .replace(/```([\s\S]*?)```/g, "<pre><code>$1</code></pre>") // Code blocks ```text```
-        .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1">') // Images ![alt](url)
-        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>') // Links [text](url)
-        .replace(/^- (.*?)(?:<br>|$)/gm, "<li>$1</li>") // Unordered list items - text
-        .replace(/<li>(.*?)<\/li>(?!(<br>|$))/g, "<ul><li>$1</li></ul>") // Wrap list items in <ul>
-        .replace(/^\d+\.\s(.*?)(?:<br>|$)/gm, "<li>$1</li>") // Ordered list items 1. text
-        .replace(/<li>(.*?)<\/li>(?!(<br>|$))/g, "<ol><li>$1</li></ol>") // Wrap list items in <ol>
-        .replace(/\|(.+?)\|(?:<br>|$)/g, function(_, row) { // Tables
-            const cells = row.split("|").map(cell => `<td>${cell.trim()}</td>`).join("");
-            return `<tr>${cells}</tr>`;
-        })
-        .replace(/<tr>(.*?)<\/tr>(?!(<br>|$))/g, "<table><tr>$1</tr></table>"); // Wrap rows in <table>
-    return ret;
 }
